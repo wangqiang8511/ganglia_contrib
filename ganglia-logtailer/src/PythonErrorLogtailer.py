@@ -12,6 +12,7 @@ import threading
 # local dependencies
 from ganglia_logtailer_helper import GangliaMetricObject
 from ganglia_logtailer_helper import LogtailerParsingException, LogtailerStateException
+from PythonLogtailer import PythonLogtailer
 
 class PythonErrorLogtailer(PythonLogtailer):
     # period must be defined and indicates how often the gmetric thread should call get_state() (in seconds) (in daemon mode only)
@@ -21,22 +22,25 @@ class PythonErrorLogtailer(PythonLogtailer):
         super(PythonErrorLogtailer, self).__init__("(?P<message>.*)")
         pass
 
-    def parse_message(self, message_dict):
+    def message_init(self):
+        self.message_dict = {}
+        self.message_dict["message"] = ""
+        self.message_dict["num_lines"] = 0
+        pass
+
+    def parse_message(self, parsed_dict):
         """
         Parse the infomration from message. Return an state dict.
         """
-        if message_dict['level'] == "ERROR":
-            message_dict = regMatch.groupdict()
-            tmpDict = {}
-            tmpDict["message"] = self.message_dict["message"] + "%%" + message_dict['message']
-            tmpDict["num_lines"] = self.message_dict["num_lines"] + 1
-            return tmpDict
+        if parsed_dict['level'] == "ERROR":
+            self.message_dict["message"] += "%%" + parsed_dict['message']
+            self.message_dict["num_lines"] += 1
 
     def generate_state_func(self, message_dict, check_time):
         """ Return metrics according to message_dict and check_time
         """
         error_lines_per_second = message_dict["num_lines"] / check_time
-        error_metric = GangliaMetricObject('error', error_lines_per_second, units='qps')
+        error_metric = GangliaMetricObject('error', error_lines_per_second, units='lps')
         return [error_metric]
 
     def message_reset(self):

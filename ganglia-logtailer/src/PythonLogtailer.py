@@ -6,6 +6,7 @@
 ###   * cache hits per second
 ###
 
+import re
 import time
 import threading
 
@@ -25,7 +26,7 @@ class PythonLogtailer(object):
         self.reset_state()
         self.reg = re.compile('^(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2}) (?P<time>[^ ]*) - (?P<module>[^ ]*) - (?P<level>[^ ]*) - %s' % message_reg)
         self.lock = threading.RLock()
-        self.message = ""
+        self.message_init()
 
     # example function for parse line
     # takes one argument (text) line to be parsed
@@ -36,7 +37,7 @@ class PythonLogtailer(object):
         self.lock.acquire()
         regMatch = self.reg.match(line)
         if regMatch:
-            self.message_dict = self.parse_message(regMatch.groupdict())
+            self.parse_message(regMatch.groupdict())
         self.lock.release()
     # example function for deep copy
     # takes no arguments
@@ -47,7 +48,7 @@ class PythonLogtailer(object):
         currently being modified so that the other thread can deal with it
         without fear of it changing out from under it.  The format of this
         object is internal to the plugin.'''
-        return [ self.message_dict ]
+        return self.message_dict
     # example function for reset_state
     # takes no arguments
     # returns nothing
@@ -95,7 +96,7 @@ class PythonLogtailer(object):
         # get the data to work with
         self.lock.acquire()
         try:
-            messages_dict = self.deep_copy()
+            message_dict = self.deep_copy()
             check_time = self.get_check_duration()
             self.reset_state()
             self.lock.release()
@@ -111,6 +112,9 @@ class PythonLogtailer(object):
         metrics = self.generate_state_func(message_dict, check_time)
         # return a list of metric objects
         return metrics
+
+    def message_init(self):
+        pass
 
     def parse_message(self, message_dict):
         """
