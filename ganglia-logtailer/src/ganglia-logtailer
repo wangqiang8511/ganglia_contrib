@@ -86,7 +86,7 @@ def submit_stats( parser, metric_prefix, gmetric_options, duration=None  ):
 
 # function gmetric_manager
 # takes a parser object - class instance
-def gmetric_manager( parser ):
+def gmetric_manager( parser, metric_prefix, gmetric_options ):
     '''This process should be used to start the thread that calls
     gmetric every so often.  It should get the period and data from the
     parser object'''
@@ -247,7 +247,9 @@ def main():
     # if we're a daemon, launch the other thread (cron mode runs after the parsing)
     if ( mode == 'daemon' ):
         #launch gmetric caller thread
-        submitter = threading.Thread(target=gmetric_manager, args=[parser])
+        submitter = threading.Thread(target=gmetric_manager, args=[parser,
+                                                                   metric_prefix,
+                                                                  gmetric_options])
         # the process should die when the main thread dies
         submitter.setDaemon( True )
         submitter.start()
